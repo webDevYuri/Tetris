@@ -43,80 +43,75 @@
     .pulse {
       animation: pulse 2s infinite;
     }
-    .tetromino {
-      transition: all 0.1s ease-out;
-    }
     .game-over-overlay {
       background: rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(5px);
     }
   </style>
 </head>
-<body class="text-white min-h-screen flex items-center justify-center p-4">
-  <div class="container max-w-4xl mx-auto bg-surface rounded-xl shadow-lg overflow-hidden relative">
-    <header class="bg-primary bg-opacity-20 p-4 flex justify-between items-center">
-      <h1 class="text-3xl font-bold neon-text">Ultimate Tetris</h1>
-      <button id="themeToggle" class="text-white hover:text-accent transition-colors">
-        <i class="fas fa-moon"></i>
-      </button>
+<body class="text-white min-h-screen flex items-center justify-center p-2">
+  <div class="container w-full max-w-lg mx-auto bg-surface rounded-xl shadow-lg overflow-hidden relative">
+    <!-- Header with smaller logo and score text -->
+    <header class="bg-primary bg-opacity-20 p-2">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold neon-text">Ultimate Tetris</h1>
+        <button id="themeToggle" class="text-white hover:text-accent transition-colors">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+      <div class="flex justify-center gap-2 mt-1">
+        <span id="scoreDisplay" class="text-sm neon-text">Score: <span id="score" class="font-bold">0</span></span>
+        <span id="highScoreDisplay" class="text-sm neon-text">High: <span id="highScore" class="font-bold">0</span></span>
+      </div>
     </header>
     
-    <div class="p-4 flex flex-wrap justify-center items-start gap-4">
-      <div class="flex-1 min-w-[300px]">
-        <canvas id="gameCanvas" class="border-4 border-primary neon-border rounded-lg mx-auto"></canvas>
+    <div class="relative p-2">
+      <!-- Main Game Canvas Container (set as relative for overlays) -->
+      <div class="relative">
+        <canvas id="gameCanvas" class="border-2 border-primary neon-border rounded-lg mx-auto block" width="300" height="600"></canvas>
+        <!-- Next Piece overlay placed at the top-right corner of the game canvas -->
+        <div id="nextPiece" class="absolute top-2 right-2 bg-surface border-2 border-accent rounded p-1">
+          <!-- Next piece canvas will be appended here -->
+        </div>
       </div>
-      <div class="flex-1 min-w-[200px] space-y-4">
-        <div class="bg-surface border-2 border-secondary rounded-lg p-4 space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-secondary">Score</span>
-            <span id="score" class="text-2xl font-bold neon-text">0</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-accent">High Score</span>
-            <span id="highScore" class="text-2xl font-bold neon-text">0</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-primary">Level</span>
-            <span id="levelValue" class="text-2xl font-bold neon-text">1</span>
-          </div>
-        </div>
-        <div class="bg-surface border-2 border-accent rounded-lg p-4">
-          <h3 class="text-center text-lg font-semibold text-accent mb-2">Next Piece</h3>
-          <div id="nextPiece" class="mx-auto"></div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button id="startBtn" class="col-span-2 bg-primary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors pulse">
-            <i class="fas fa-play mr-2"></i> Start
-          </button>
-          <button id="pauseBtn" class="bg-secondary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors hidden">
-            <i class="fas fa-pause"></i>
-          </button>
-          <button id="soundToggle" class="bg-accent hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors">
-            <i class="fas fa-volume-up"></i>
-          </button>
-        </div>
+      <!-- Centered Start Button Overlay; it will disappear once clicked -->
+      <div id="startOverlay" class="absolute inset-0 flex items-center justify-center">
+        <button id="startBtn" class="bg-primary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors pulse">
+          <i class="fas fa-play mr-2"></i> Start
+        </button>
       </div>
     </div>
     
-    <div id="touch-controls" class="grid grid-cols-3 gap-2 p-4 bg-surface bg-opacity-50">
-      <button id="leftBtn" class="bg-primary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+    <!-- Sidebar now only contains level display -->
+    <div class="p-2">
+      <div class="bg-surface border-2 border-secondary rounded-lg p-2">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-primary">Level</span>
+          <span id="levelValue" class="text-lg font-bold neon-text">1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Touch Controls optimized for mobile -->
+    <div id="touch-controls" class="grid grid-cols-3 gap-1 p-2 bg-surface bg-opacity-50">
+      <button id="leftBtn" class="bg-primary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-2 px-2 rounded transition-colors">
         <i class="fas fa-arrow-left"></i>
       </button>
-      <button id="rotateBtn" class="bg-secondary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+      <button id="rotateBtn" class="bg-secondary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-2 px-2 rounded transition-colors">
         <i class="fas fa-redo"></i>
       </button>
-      <button id="rightBtn" class="bg-primary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+      <button id="rightBtn" class="bg-primary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-2 px-2 rounded transition-colors">
         <i class="fas fa-arrow-right"></i>
       </button>
-      <button id="dropBtn" class="col-span-3 bg-accent bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+      <button id="dropBtn" class="col-span-3 bg-accent bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-2 px-2 rounded transition-colors">
         <i class="fas fa-arrow-down"></i> Drop
       </button>
     </div>
 
     <div id="gameOverOverlay" class="absolute inset-0 game-over-overlay hidden flex items-center justify-center">
       <div class="text-center">
-        <h2 class="text-4xl font-bold mb-4 neon-text">Game Over</h2>
-        <p class="text-2xl mb-4">Your Score: <span id="finalScore"></span></p>
+        <h2 class="text-3xl font-bold mb-2 neon-text">Game Over</h2>
+        <p class="text-xl mb-2">Your Score: <span id="finalScore"></span></p>
         <button id="restartBtn" class="bg-primary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors">
           Restart
         </button>
@@ -130,16 +125,18 @@
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
     const highScoreEl = document.getElementById('highScore');
+    const startOverlay = document.getElementById('startOverlay');
     const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const soundToggle = document.getElementById('soundToggle');
     const themeToggle = document.getElementById('themeToggle');
     const levelEl = document.getElementById('levelValue');
+    
+    // Next Piece: create a smaller 60x60 canvas and append to the overlay container
     const nextPieceCanvas = document.createElement('canvas');
-    nextPieceCanvas.width = 100;
-    nextPieceCanvas.height = 100;
+    nextPieceCanvas.width = 60;
+    nextPieceCanvas.height = 60;
     document.getElementById('nextPiece').appendChild(nextPieceCanvas);
     const nextPieceCtx = nextPieceCanvas.getContext('2d');
+    
     const gameOverOverlay = document.getElementById('gameOverOverlay');
     const finalScoreEl = document.getElementById('finalScore');
     const restartBtn = document.getElementById('restartBtn');
@@ -160,9 +157,9 @@
     let level = 1;
     let isGameRunning = false;
     let isPaused = false;
-    let isSoundOn = true;
+    let isSoundOn = true; // (Sound functionality remains internally)
 
-    // Sound effects
+    // Sound effects (UI speaker has been removed)
     const moveSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.mp3');
     const rotateSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3');
     const dropSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-falling-game-over-1942.mp3');
@@ -361,7 +358,7 @@
       finalScoreEl.textContent = score;
     }
 
-    // Start the game
+    // Start the game: hide the start overlay when clicked
     function startGame() {
       createBoard();
       score = 0;
@@ -372,26 +369,10 @@
       spawnPiece();
       isGameRunning = true;
       isPaused = false;
-      pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      startOverlay.classList.add('hidden');
       gameInterval = setInterval(gameLoop, gameSpeed);
-      startBtn.classList.add('hidden');
-      pauseBtn.classList.remove('hidden');
       gameOverOverlay.classList.add('hidden');
     }
-
-    // Toggle pause/resume
-    pauseBtn.addEventListener('click', () => {
-      if(!isGameRunning) return;
-      if(isPaused) {
-        isPaused = false;
-        pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        gameInterval = setInterval(gameLoop, gameSpeed);
-      } else {
-        isPaused = true;
-        pauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        clearInterval(gameInterval);
-      }
-    });
 
     // Keyboard controls for desktop
     document.addEventListener('keydown', e => {
@@ -476,12 +457,6 @@
     // Button event listeners
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
-
-    // Toggle sound
-    soundToggle.addEventListener('click', () => {
-      isSoundOn = !isSoundOn;
-      soundToggle.innerHTML = isSoundOn ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-    });
 
     // Toggle dark/light mode
     themeToggle.addEventListener('click', () => {
