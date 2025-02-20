@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ultimate Tetris</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#00F5FF',
+            secondary: '#FF00FF',
+            accent: '#FFFF00',
+            background: '#000033',
+            surface: '#000066',
+          },
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #000033, #000066);
+    }
+    .neon-text {
+      text-shadow: 0 0 5px #00F5FF, 0 0 10px #00F5FF, 0 0 15px #00F5FF, 0 0 20px #00F5FF;
+    }
+    .neon-border {
+      box-shadow: 0 0 5px #00F5FF, 0 0 10px #00F5FF, 0 0 15px #00F5FF, 0 0 20px #00F5FF;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    .tetromino {
+      transition: all 0.1s ease-out;
+    }
+    .game-over-overlay {
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen flex items-center justify-center p-4">
+  <div class="container max-w-4xl mx-auto bg-surface rounded-xl shadow-lg overflow-hidden relative">
+    <header class="bg-primary bg-opacity-20 p-4 flex justify-between items-center">
+      <h1 class="text-3xl font-bold neon-text">Ultimate Tetris</h1>
+      <button id="themeToggle" class="text-white hover:text-accent transition-colors">
+        <i class="fas fa-moon"></i>
+      </button>
+    </header>
+    
+    <div class="p-4 flex flex-wrap justify-center items-start gap-4">
+      <div class="flex-1 min-w-[300px]">
+        <canvas id="gameCanvas" class="border-4 border-primary neon-border rounded-lg mx-auto"></canvas>
+      </div>
+      <div class="flex-1 min-w-[200px] space-y-4">
+        <div class="bg-surface border-2 border-secondary rounded-lg p-4 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-secondary">Score</span>
+            <span id="score" class="text-2xl font-bold neon-text">0</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-accent">High Score</span>
+            <span id="highScore" class="text-2xl font-bold neon-text">0</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-primary">Level</span>
+            <span id="levelValue" class="text-2xl font-bold neon-text">1</span>
+          </div>
+        </div>
+        <div class="bg-surface border-2 border-accent rounded-lg p-4">
+          <h3 class="text-center text-lg font-semibold text-accent mb-2">Next Piece</h3>
+          <div id="nextPiece" class="mx-auto"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="startBtn" class="col-span-2 bg-primary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors pulse">
+            <i class="fas fa-play mr-2"></i> Start
+          </button>
+          <button id="pauseBtn" class="bg-secondary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors hidden">
+            <i class="fas fa-pause"></i>
+          </button>
+          <button id="soundToggle" class="bg-accent hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors">
+            <i class="fas fa-volume-up"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="touch-controls" class="grid grid-cols-3 gap-2 p-4 bg-surface bg-opacity-50">
+      <button id="leftBtn" class="bg-primary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <button id="rotateBtn" class="bg-secondary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+        <i class="fas fa-redo"></i>
+      </button>
+      <button id="rightBtn" class="bg-primary bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+        <i class="fas fa-arrow-right"></i>
+      </button>
+      <button id="dropBtn" class="col-span-3 bg-accent bg-opacity-50 hover:bg-opacity-80 text-white font-bold py-4 px-6 rounded transition-colors">
+        <i class="fas fa-arrow-down"></i> Drop
+      </button>
+    </div>
+
+    <div id="gameOverOverlay" class="absolute inset-0 game-over-overlay hidden flex items-center justify-center">
+      <div class="text-center">
+        <h2 class="text-4xl font-bold mb-4 neon-text">Game Over</h2>
+        <p class="text-2xl mb-4">Your Score: <span id="finalScore"></span></p>
+        <button id="restartBtn" class="bg-primary hover:bg-opacity-80 text-background font-bold py-2 px-4 rounded transition-colors">
+          Restart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Canvas and score setup
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const highScoreEl = document.getElementById('highScore');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const soundToggle = document.getElementById('soundToggle');
+    const themeToggle = document.getElementById('themeToggle');
+    const levelEl = document.getElementById('levelValue');
+    const nextPieceCanvas = document.createElement('canvas');
+    nextPieceCanvas.width = 100;
+    nextPieceCanvas.height = 100;
+    document.getElementById('nextPiece').appendChild(nextPieceCanvas);
+    const nextPieceCtx = nextPieceCanvas.getContext('2d');
+    const gameOverOverlay = document.getElementById('gameOverOverlay');
+    const finalScoreEl = document.getElementById('finalScore');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let highScore = localStorage.getItem('tetrisHighScore') || 0;
+    highScoreEl.textContent = highScore;
+
+    // Game configuration
+    const ROWS = 20, COLS = 10, BLOCK_SIZE = 30;
+    canvas.width = COLS * BLOCK_SIZE;
+    canvas.height = ROWS * BLOCK_SIZE;
+    let board = [];
+    let currentPiece;
+    let nextPiece;
+    let gameInterval;
+    let gameSpeed = 500;
+    let score = 0;
+    let level = 1;
+    let isGameRunning = false;
+    let isPaused = false;
+    let isSoundOn = true;
+
+    // Sound effects
+    const moveSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.mp3');
+    const rotateSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3');
+    const dropSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-falling-game-over-1942.mp3');
+    const clearSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-changing-tab-206.mp3');
+    const gameOverSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-retro-arcade-game-over-470.mp3');
+
+    // Define tetromino shapes and colors
+    const tetrominoes = [
+      { shape: [[1,1,1,1]], color: '#00F5FF' }, // I
+      { shape: [[1,1], [1,1]], color: '#FFFF00' }, // O
+      { shape: [[0,1,0], [1,1,1]], color: '#FF00FF' }, // T
+      { shape: [[1,0,0], [1,1,1]], color: '#00FF00' }, // L
+      { shape: [[0,0,1], [1,1,1]], color: '#FF8000' }, // J
+      { shape: [[1,1,0], [0,1,1]], color: '#FF0000' }, // S
+      { shape: [[0,1,1], [1,1,0]], color: '#0000FF' }  // Z
+    ];
+
+    // Create an empty board
+    function createBoard() {
+      board = [];
+      for(let r = 0; r < ROWS; r++){
+        board[r] = [];
+        for(let c = 0; c < COLS; c++){
+          board[r][c] = '';
+        }
+      }
+    }
+
+    // Draw the board on the canvas
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for(let r = 0; r < ROWS; r++){
+        for(let c = 0; c < COLS; c++){
+          if(board[r][c]){
+            ctx.fillStyle = board[r][c];
+            ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            ctx.strokeStyle = '#000033';
+            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          } else {
+            ctx.fillStyle = '#000066';
+            ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            ctx.strokeStyle = '#000033';
+            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          }
+        }
+      }
+    }
+
+    // Draw the current tetromino piece
+    function drawPiece(piece, offsetX, offsetY, context = ctx) {
+      piece.shape.forEach((row, r) => {
+        row.forEach((value, c) => {
+          if(value){
+            context.fillStyle = piece.color;
+            context.fillRect((c + offsetX) * BLOCK_SIZE, (r + offsetY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            context.strokeStyle = '#000033';
+            context.strokeRect((c + offsetX) * BLOCK_SIZE, (r + offsetY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          }
+        });
+      });
+    }
+
+    // Draw the next piece preview
+    function drawNextPiece() {
+      nextPieceCtx.clearRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
+      const offsetX = (5 - nextPiece.shape[0].length) / 2;
+      const offsetY = (5 - nextPiece.shape.length) / 2;
+      drawPiece(nextPiece, offsetX, offsetY, nextPieceCtx);
+    }
+
+    // Rotate the tetromino matrix clockwise
+    function rotate(matrix) {
+      return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+    }
+
+    // Check for collision at a given position
+    function collision(piece, offsetX, offsetY) {
+      for(let r = 0; r < piece.shape.length; r++){
+        for(let c = 0; c < piece.shape[r].length; c++){
+          if(piece.shape[r][c]){
+            let newX = c + offsetX;
+            let newY = r + offsetY;
+            if(newX < 0 || newX >= COLS || newY >= ROWS){
+              return true;
+            }
+            if(newY >= 0 && board[newY][newX]){
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    // Place the current piece onto the board
+    function placePiece() {
+      currentPiece.shape.forEach((row, r) => {
+        row.forEach((value, c) => {
+          if(value){
+            let x = c + currentPiece.x;
+            let y = r + currentPiece.y;
+            if(y >= 0){
+              board[y][x] = currentPiece.color;
+            }
+          }
+        });
+      });
+    }
+
+    // Clear full lines and trigger explosion animations
+    function clearLines() {
+      let linesCleared = 0;
+      for(let r = ROWS - 1; r >= 0; r--){
+        if(board[r].every(cell => cell !== '')){
+          createExplosion(r);
+          board.splice(r, 1);
+          board.unshift(new Array(COLS).fill(''));
+          linesCleared++;
+          r++; // re-check this row as rows have shifted
+        }
+      }
+      
+      if(linesCleared > 0){
+        if (isSoundOn) clearSound.play();
+        score += linesCleared * 10 * level;
+        scoreEl.textContent = score;
+        if(score > highScore){
+          highScore = score;
+          highScoreEl.textContent = highScore;
+          localStorage.setItem('tetrisHighScore', highScore);
+        }
+        // Increase level and speed
+        if(score >= level * 100){
+          level++;
+          levelEl.textContent = level;
+          gameSpeed = Math.max(100, 500 - (level - 1) * 20);
+          clearInterval(gameInterval);
+          gameInterval = setInterval(gameLoop, gameSpeed);
+        }
+      }
+    }
+
+    // Create explosion effect
+    function createExplosion(row) {
+      for(let c = 0; c < COLS; c++){
+        let explosion = document.createElement('div');
+        explosion.classList.add('absolute', 'bg-accent', 'opacity-75', 'rounded-full', 'pulse');
+        explosion.style.width = BLOCK_SIZE + 'px';
+        explosion.style.height = BLOCK_SIZE + 'px';
+        explosion.style.left = (c * BLOCK_SIZE + canvas.offsetLeft) + 'px';
+        explosion.style.top = (row * BLOCK_SIZE + canvas.offsetTop) + 'px';
+        document.body.appendChild(explosion);
+        setTimeout(() => explosion.remove(), 500);
+      }
+    }
+
+    // Spawn a new random tetromino piece
+    function spawnPiece() {
+      if (!nextPiece) {
+        const index = Math.floor(Math.random() * tetrominoes.length);
+        nextPiece = JSON.parse(JSON.stringify(tetrominoes[index]));
+      }
+      currentPiece = nextPiece;
+      currentPiece.x = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
+      currentPiece.y = -1;
+      
+      const index = Math.floor(Math.random() * tetrominoes.length);
+      nextPiece = JSON.parse(JSON.stringify(tetrominoes[index]));
+      drawNextPiece();
+    }
+
+    // Main game loop: move the piece down and handle collisions
+    function gameLoop() {
+      if(!isGameRunning || isPaused) return;
+      if(!collision(currentPiece, currentPiece.x, currentPiece.y + 1)){
+        currentPiece.y++;
+      } else {
+        placePiece();
+        clearLines();
+        spawnPiece();
+        if(collision(currentPiece, currentPiece.x, currentPiece.y)){
+          gameOver();
+          return;
+        }
+      }
+      drawBoard();
+      drawPiece(currentPiece, currentPiece.x, currentPiece.y);
+    }
+
+    // Game over function
+    function gameOver() {
+      isGameRunning = false;
+      clearInterval(gameInterval);
+      if (isSoundOn) gameOverSound.play();
+      gameOverOverlay.classList.remove('hidden');
+      finalScoreEl.textContent = score;
+    }
+
+    // Start the game
+    function startGame() {
+      createBoard();
+      score = 0;
+      level = 1;
+      gameSpeed = 500;
+      scoreEl.textContent = score;
+      levelEl.textContent = level;
+      spawnPiece();
+      isGameRunning = true;
+      isPaused = false;
+      pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      gameInterval = setInterval(gameLoop, gameSpeed);
+      startBtn.classList.add('hidden');
+      pauseBtn.classList.remove('hidden');
+      gameOverOverlay.classList.add('hidden');
+    }
+
+    // Toggle pause/resume
+    pauseBtn.addEventListener('click', () => {
+      if(!isGameRunning) return;
+      if(isPaused) {
+        isPaused = false;
+        pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        gameInterval = setInterval(gameLoop, gameSpeed);
+      } else {
+        isPaused = true;
+        pauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        clearInterval(gameInterval);
+      }
+    });
+
+    // Keyboard controls for desktop
+    document.addEventListener('keydown', e => {
+      if(!isGameRunning || isPaused) return;
+      switch(e.key) {
+        case 'ArrowLeft':
+          if(!collision(currentPiece, currentPiece.x - 1, currentPiece.y)){
+            currentPiece.x--;
+            if (isSoundOn) moveSound.play();
+          }
+          break;
+        case 'ArrowRight':
+          if(!collision(currentPiece, currentPiece.x + 1, currentPiece.y)){
+            currentPiece.x++;
+            if (isSoundOn) moveSound.play();
+          }
+          break;
+        case 'ArrowDown':
+          if(!collision(currentPiece, currentPiece.x, currentPiece.y + 1)){
+            currentPiece.y++;
+            if (isSoundOn) moveSound.play();
+          }
+          break;
+        case 'ArrowUp':
+          let rotated = rotate(currentPiece.shape);
+          if(!collision({...currentPiece, shape: rotated}, currentPiece.x, currentPiece.y)){
+            currentPiece.shape = rotated;
+            if (isSoundOn) rotateSound.play();
+          }
+          break;
+        case ' ':
+          while(!collision(currentPiece, currentPiece.x, currentPiece.y + 1)){
+            currentPiece.y++;
+          }
+          if (isSoundOn) dropSound.play();
+          break;
+      }
+      drawBoard();
+      drawPiece(currentPiece, currentPiece.x, currentPiece.y);
+    });
+
+    // Touch and pointer controls for mobile devices
+    function addControlListener(id, callback) {
+      const btn = document.getElementById(id);
+      if(btn) {
+        btn.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          if(isGameRunning && !isPaused) {
+            callback();
+            drawBoard();
+            drawPiece(currentPiece, currentPiece.x, currentPiece.y);
+          }
+        });
+      }
+    }
+    addControlListener('leftBtn', () => {
+      if(!collision(currentPiece, currentPiece.x - 1, currentPiece.y)){
+        currentPiece.x--;
+        if (isSoundOn) moveSound.play();
+      }
+    });
+    addControlListener('rightBtn', () => {
+      if(!collision(currentPiece, currentPiece.x + 1, currentPiece.y)){
+        currentPiece.x++;
+        if (isSoundOn) moveSound.play();
+      }
+    });
+    addControlListener('rotateBtn', () => {
+      let rotated = rotate(currentPiece.shape);
+      if(!collision({...currentPiece, shape: rotated}, currentPiece.x, currentPiece.y)){
+        currentPiece.shape = rotated;
+        if (isSoundOn) rotateSound.play();
+      }
+    });
+    addControlListener('dropBtn', () => {
+      while(!collision(currentPiece, currentPiece.x, currentPiece.y + 1)){
+        currentPiece.y++;
+      }
+      if (isSoundOn) dropSound.play();
+    });
+
+    // Button event listeners
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    // Toggle sound
+    soundToggle.addEventListener('click', () => {
+      isSoundOn = !isSoundOn;
+      soundToggle.innerHTML = isSoundOn ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+    });
+
+    // Toggle dark/light mode
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      themeToggle.innerHTML = document.body.classList.contains('dark') ? 
+        '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    });
+
+    // Initial setup
+    createBoard();
+    drawBoard();
+  </script>
+</body>
+</html>
