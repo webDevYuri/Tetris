@@ -59,7 +59,7 @@
           <i class="fas fa-moon"></i>
         </button>
       </div>
-      <div class="flex justify-center gap-2 mt-1">
+      <div class="flex justify-between gap-2 mt-1">
         <span id="scoreDisplay" class="text-sm neon-text">Score: <span id="score" class="font-bold">0</span></span>
         <span id="highScoreDisplay" class="text-sm neon-text">High: <span id="highScore" class="font-bold">0</span></span>
       </div>
@@ -136,6 +136,8 @@
     nextPieceCanvas.height = 60;
     document.getElementById('nextPiece').appendChild(nextPieceCanvas);
     const nextPieceCtx = nextPieceCanvas.getContext('2d');
+    // Define a smaller cell size for the preview (e.g., 12px)
+    const previewCellSize = 12;
     
     const gameOverOverlay = document.getElementById('gameOverOverlay');
     const finalScoreEl = document.getElementById('finalScore');
@@ -159,7 +161,7 @@
     let isPaused = false;
     let isSoundOn = true; // (Sound functionality remains internally)
 
-    // Sound effects (UI speaker has been removed)
+    // Sound effects (Sound button removed from UI)
     const moveSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-mechanical-bling-210.mp3');
     const rotateSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3');
     const dropSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-falling-game-over-1942.mp3');
@@ -188,46 +190,26 @@
       }
     }
 
-    // Draw the board on the canvas
-    function drawBoard() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for(let r = 0; r < ROWS; r++){
-        for(let c = 0; c < COLS; c++){
-          if(board[r][c]){
-            ctx.fillStyle = board[r][c];
-            ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-            ctx.strokeStyle = '#000033';
-            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-          } else {
-            ctx.fillStyle = '#000066';
-            ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-            ctx.strokeStyle = '#000033';
-            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-          }
-        }
-      }
-    }
-
-    // Draw the current tetromino piece
-    function drawPiece(piece, offsetX, offsetY, context = ctx) {
+    // Updated drawPiece function accepting an optional cellSize parameter.
+    function drawPiece(piece, offsetX, offsetY, context = ctx, cellSize = BLOCK_SIZE) {
       piece.shape.forEach((row, r) => {
         row.forEach((value, c) => {
           if(value){
             context.fillStyle = piece.color;
-            context.fillRect((c + offsetX) * BLOCK_SIZE, (r + offsetY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            context.fillRect((c + offsetX) * cellSize, (r + offsetY) * cellSize, cellSize, cellSize);
             context.strokeStyle = '#000033';
-            context.strokeRect((c + offsetX) * BLOCK_SIZE, (r + offsetY) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            context.strokeRect((c + offsetX) * cellSize, (r + offsetY) * cellSize, cellSize, cellSize);
           }
         });
       });
     }
 
-    // Draw the next piece preview
+    // Draw the next piece preview using the smaller cell size.
     function drawNextPiece() {
       nextPieceCtx.clearRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
       const offsetX = (5 - nextPiece.shape[0].length) / 2;
       const offsetY = (5 - nextPiece.shape.length) / 2;
-      drawPiece(nextPiece, offsetX, offsetY, nextPieceCtx);
+      drawPiece(nextPiece, offsetX, offsetY, nextPieceCtx, previewCellSize);
     }
 
     // Rotate the tetromino matrix clockwise
