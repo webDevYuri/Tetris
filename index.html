@@ -59,7 +59,7 @@
           <i class="fas fa-moon"></i>
         </button>
       </div>
-      <div class="flex justify-between gap-2 mt-1">
+      <div class="flex justify-center gap-2 mt-1">
         <span id="scoreDisplay" class="text-sm neon-text">Score: <span id="score" class="font-bold">0</span></span>
         <span id="highScoreDisplay" class="text-sm neon-text">High: <span id="highScore" class="font-bold">0</span></span>
       </div>
@@ -190,6 +190,35 @@
       }
     }
 
+    // Draw the game board - THIS IS THE MISSING FUNCTION
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw background grid
+      ctx.fillStyle = '#000033';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw grid lines
+      ctx.strokeStyle = '#1a1a4d';
+      for(let r = 0; r < ROWS; r++) {
+        for(let c = 0; c < COLS; c++) {
+          ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        }
+      }
+      
+      // Draw placed pieces
+      for(let r = 0; r < ROWS; r++) {
+        for(let c = 0; c < COLS; c++) {
+          if(board[r][c]) {
+            ctx.fillStyle = board[r][c];
+            ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            ctx.strokeStyle = '#000033';
+            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+          }
+        }
+      }
+    }
+
     // Updated drawPiece function accepting an optional cellSize parameter.
     function drawPiece(piece, offsetX, offsetY, context = ctx, cellSize = BLOCK_SIZE) {
       piece.shape.forEach((row, r) => {
@@ -204,11 +233,11 @@
       });
     }
 
-    // Draw the next piece preview using the smaller cell size.
+    // Draw the next piece preview using a smaller cell size.
     function drawNextPiece() {
       nextPieceCtx.clearRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
-      const offsetX = (5 - nextPiece.shape[0].length) / 2;
-      const offsetY = (5 - nextPiece.shape.length) / 2;
+      const offsetX = Math.floor((5 - nextPiece.shape[0].length) / 2);
+      const offsetY = Math.floor((5 - nextPiece.shape.length) / 2);
       drawPiece(nextPiece, offsetX, offsetY, nextPieceCtx, previewCellSize);
     }
 
